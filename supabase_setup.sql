@@ -24,7 +24,32 @@ CREATE TABLE IF NOT EXISTS receitas (
   atualizado_em TIMESTAMPTZ DEFAULT now()
 );
 
--- 2. TABELA DE ASSINATURAS
+-- 2. TABELA DE CONFIGURAÇÕES DO PROFISSIONAL
+CREATE TABLE IF NOT EXISTS configuracoes (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
+  medico TEXT,
+  crm TEXT,
+  especialidade TEXT,
+  unidade TEXT,
+  endereco_unidade TEXT,
+  cnes TEXT,
+  telefone_unidade TEXT,
+  cidade TEXT,
+  criado_em TIMESTAMPTZ DEFAULT now(),
+  atualizado_em TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE configuracoes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "config_select" ON configuracoes FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "config_insert" ON configuracoes FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "config_update" ON configuracoes FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE OR REPLACE TRIGGER configuracoes_atualizado_em
+  BEFORE UPDATE ON configuracoes
+  FOR EACH ROW EXECUTE FUNCTION update_atualizado_em();
+
+-- 3. TABELA DE ASSINATURAS
 CREATE TABLE IF NOT EXISTS assinaturas (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,

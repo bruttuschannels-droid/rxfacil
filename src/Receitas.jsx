@@ -10,9 +10,16 @@ const emptyForm = {
   observacoes: "",
 };
 
-export default function Receitas({ user }) {
+export default function Receitas({ user, config = {} }) {
   const [receitas, setReceitas] = useState([]);
-  const [form, setForm] = useState(emptyForm);
+  const makeForm = (cfg = {}) => ({
+    ...emptyForm,
+    medico: cfg.medico || "",
+    crm: cfg.crm || "",
+    especialidade: cfg.especialidade || "",
+    unidade: cfg.unidade || "",
+  });
+  const [form, setForm] = useState(() => makeForm(config));
   const [editing, setEditing] = useState(null);
   const [search, setSearch] = useState("");
 
@@ -52,7 +59,7 @@ export default function Receitas({ user }) {
     if (editing) result = await supabase.from("receitas").update(payload).eq("id", editing);
     else result = await supabase.from("receitas").insert(payload);
     if (result.error) { alert("Erro ao salvar: " + result.error.message); return; }
-    setForm(emptyForm); setEditing(null); loadReceitas();
+    setForm(makeForm(config)); setEditing(null); loadReceitas();
     alert("Receita salva com sucesso!");
   }
 
@@ -73,7 +80,12 @@ export default function Receitas({ user }) {
     const meds = typeof f2.medicamentos === "string" ? JSON.parse(f2.medicamentos) : f2.medicamentos;
     const tipoReceita = f2.tipo_receita || f2.tipo || "saude_mental";
     const dataStr = f2.incluir_data !== false ? new Date().toLocaleDateString("pt-BR") : "";
-    const unidade = f2.unidade || "ESF EMÍLIA";
+    const unidade = f2.unidade || config.unidade || "";
+    // dados da unidade: vêm do config (configurações do profissional)
+    const enderecoUnidade = config.endereco_unidade || "";
+    const cnes = config.cnes || "";
+    const telefoneUnidade = config.telefone_unidade || "";
+    const cidade = f2.cidade || config.cidade || "";
 
     const medsHtml = meds.map(m => `
       <div style="margin-bottom:7px;line-height:1.5;">
@@ -86,10 +98,10 @@ export default function Receitas({ user }) {
         <div style="border:1px solid #000;padding:4px 7px;margin-bottom:5px;">
           <div style="font-size:7.5pt;font-weight:700;font-family:Arial,sans-serif;margin-bottom:2px;">IDENTIFICAÇÃO DO EMITENTE</div>
           <div style="font-size:8pt;font-family:Arial,sans-serif;line-height:1.6;"><span style="font-weight:700;">Unidade de Saúde:</span> ${unidade}</div>
-          ${f2.endereco_unidade ? `<div style="font-size:8pt;font-family:Arial,sans-serif;line-height:1.6;"><span style="font-weight:700;">Endereço:</span> ${f2.endereco_unidade}</div>` : ""}
+          ${enderecoUnidade ? `<div style="font-size:8pt;font-family:Arial,sans-serif;line-height:1.6;"><span style="font-weight:700;">Endereço:</span> ${enderecoUnidade}</div>` : ""}
           <div style="display:flex;gap:10px;font-size:8pt;font-family:Arial,sans-serif;line-height:1.6;">
-            ${f2.cnes ? `<span><span style="font-weight:700;">CNES:</span> ${f2.cnes}</span>` : ""}
-            ${f2.telefone_unidade ? `<span><span style="font-weight:700;">Telefone:</span> ${f2.telefone_unidade}</span>` : ""}
+            ${cnes ? `<span><span style="font-weight:700;">CNES:</span> ${cnes}</span>` : ""}
+            ${telefoneUnidade ? `<span><span style="font-weight:700;">Telefone:</span> ${telefoneUnidade}</span>` : ""}
           </div>
         </div>`;
     }
@@ -142,7 +154,7 @@ export default function Receitas({ user }) {
             <div style="font-size:8pt;font-weight:700;font-family:Arial,sans-serif;line-height:1.6;">SECRETARIA MUNICIPAL DE SAÚDE</div>
             <div style="font-size:10pt;font-weight:700;font-family:Arial,sans-serif;line-height:1.6;">${unidade}</div>
             <div style="font-size:12pt;font-weight:900;font-family:Arial,sans-serif;letter-spacing:1px;line-height:1.5;">RECEITUÁRIO MÉDICO</div>
-            <div style="font-size:7.5pt;font-family:Arial,sans-serif;line-height:1.5;">${f2.cidade || ""}</div>
+            <div style="font-size:7.5pt;font-family:Arial,sans-serif;line-height:1.5;">${cidade}</div>
           </div>
           <div style="font-size:8.5pt;font-family:Arial,sans-serif;font-weight:700;margin-bottom:3px;">${titulo}</div>
           <div style="border-bottom:1px solid #000;margin-bottom:7px;"></div>
@@ -248,10 +260,11 @@ export default function Receitas({ user }) {
             {(form.tipo === "controle_especial" || form.tipo === "uso_continuo") && (
               <input style={inp} placeholder="Endereço do Paciente" value={form.endereco_paciente || ""} onChange={e => setField("endereco_paciente", e.target.value)} />
             )}
-            <input style={inp} placeholder="Médico(a)" value={form.medico} onChange={e => setField("medico", e.target.value)} />
-            <input style={inp} placeholder="CRM" value={form.crm} onChange={e => setField("crm", e.target.value)} />
-            <input style={inp} placeholder="Especialidade" value={form.especialidade} onChange={e => setField("especialidade", e.target.value)} />
-            <input style={inp} placeholder="Unidade de Saúde" value={form.unidade} onChange={e => setField("unidade", e.target.value)} />
+            <div style={{ background: "#f5f3ff", border: "1px solid #c4b5fd", borderRadius: 7, padding: "8px 11px", fontSize: 12, color: "#5b21b6" }}>
+              👨‍⚕️ <strong>{form.medico || "—"}</strong>{form.crm ? ` · CRM ${form.crm}` : ""}{form.especialidade ? ` · ${form.especialidade}` : ""}<br />
+              🏥 {form.unidade || "—"}<br />
+              <span style={{ fontSize: 11, color: "#7c3aed" }}>Dados das ⚙️ Configurações · clique para editar lá</span>
+            </div>
             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
               <input type="checkbox" id="inc_data" checked={!!form.incluir_data} onChange={e => setField("incluir_data", e.target.checked)} />
               <label htmlFor="inc_data" style={{ fontSize: 13 }}>Incluir data na receita</label>
@@ -274,7 +287,7 @@ export default function Receitas({ user }) {
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               <button style={btn("#22c55e")} onClick={saveReceita}>{editing ? "💾 Atualizar" : "💾 Salvar"}</button>
               <button style={btn("#3b82f6")} onClick={() => printReceita(null)}>🖨️ Imprimir</button>
-              {editing && <button style={btn("#6b7280")} onClick={() => { setEditing(null); setForm(emptyForm); }}>✕ Cancelar</button>}
+              {editing && <button style={btn("#6b7280")} onClick={() => { setEditing(null); setForm(makeForm(config)); }}>✕ Cancelar</button>}
             </div>
           </div>
         </div>
