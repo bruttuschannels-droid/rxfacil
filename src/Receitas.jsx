@@ -10,7 +10,7 @@ const C = {
 
 const emptyForm = {
   nome_paciente: "", data_nascimento: "", cpf_cns: "", endereco_paciente: "",
-  tipo: "saude_mental",
+  tipo: "controle_especial",
   medicamentos: [{ nome: "", quantidade: "", instrucao: "" }],
   medico: "", crm: "", especialidade: "", unidade: "",
   incluir_data: true, data_receita: new Date().toISOString().split("T")[0],
@@ -70,13 +70,13 @@ export default function Receitas({ user, config = {} }) {
 
   function editReceita(r) {
     setEditing(r.id);
-    setForm({ ...r, tipo: r.tipo_receita || r.tipo || "saude_mental", endereco_paciente: r.endereco_paciente || "", medicamentos: typeof r.medicamentos === "string" ? JSON.parse(r.medicamentos) : r.medicamentos, incluir_data: r.incluir_data !== false });
+    setForm({ ...r, tipo: r.tipo_receita || r.tipo || "controle_especial", endereco_paciente: r.endereco_paciente || "", medicamentos: typeof r.medicamentos === "string" ? JSON.parse(r.medicamentos) : r.medicamentos, incluir_data: r.incluir_data !== false });
   }
 
   function printReceita(r) {
     const f2 = r || form;
     const meds = typeof f2.medicamentos === "string" ? JSON.parse(f2.medicamentos) : f2.medicamentos;
-    const tipoReceita = f2.tipo_receita || f2.tipo || "saude_mental";
+    const tipoReceita = f2.tipo_receita || f2.tipo || "controle_especial";
     const dataStr = f2.incluir_data !== false ? new Date().toLocaleDateString("pt-BR") : "";
     const unidade = f2.unidade || config.unidade || "";
     const enderecoUnidade = config.endereco_unidade || "";
@@ -209,7 +209,7 @@ export default function Receitas({ user, config = {} }) {
     return !s || (r.nome_paciente||"").toLowerCase().includes(s) || (r.medico||"").toLowerCase().includes(s);
   });
 
-  const tipoLabel = t => ({ saude_mental: "Saúde Mental", controle_especial: "Controle Especial", uso_continuo: "Uso Contínuo" }[t] || t);
+  const tipoLabel = t => ({ saude_mental: "Saúde Mental", controle_especial: "Controle Especial Novo Modelo 2026", uso_continuo: "Uso Contínuo" }[t] || t);
   const tipoColor = t => ({ saude_mental: "#4F46E5", controle_especial: "#DC2626", uso_continuo: "#0F9B8E" }[t] || "#64748B");
 
   const inp = {
@@ -243,7 +243,7 @@ export default function Receitas({ user, config = {} }) {
               <select style={{ ...inp, background: "#F8FAFC" }} value={form.tipo} onChange={e => setField("tipo", e.target.value)}>
                 <option value="saude_mental">Saúde Mental — A4 Paisagem (2 vias)</option>
                 <option value="uso_continuo">Uso Oral Contínuo — A4 Retrato (1 via)</option>
-                <option value="controle_especial">Controle Especial — A4 Paisagem (2 vias)</option>
+                <option value="controle_especial">Controle Especial Novo Modelo 2026 — A4 Paisagem (2 vias)</option>
               </select>
             </div>
 
