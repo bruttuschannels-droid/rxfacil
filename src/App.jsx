@@ -4,6 +4,7 @@ import Login from "./Login.jsx";
 import Receitas from "./Receitas.jsx";
 import Assinatura from "./Assinatura.jsx";
 import Configuracoes from "./Configuracoes.jsx";
+import Admin from "./Admin.jsx";
 
 export default function App() {
   const [session, setSession] = useState(null);
@@ -11,6 +12,7 @@ export default function App() {
   const [assinatura, setAssinatura] = useState(null);
   const [config, setConfig] = useState(null);
   const [aba, setAba] = useState("receitas");
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -21,19 +23,21 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session) loadTudo(session.user.id);
-      else { setAssinatura(null); setConfig(null); setLoading(false); }
+      else { setAssinatura(null); setConfig(null); setIsAdmin(false); setLoading(false); }
     });
     return () => subscription.unsubscribe();
   }, []);
 
   async function loadTudo(userId) {
     setLoading(true);
-    const [{ data: ass }, { data: cfg }] = await Promise.all([
+    const [{ data: ass }, { data: cfg }, { data: adm }] = await Promise.all([
       supabase.from("assinaturas").select("*").eq("user_id", userId).eq("ativa", true).maybeSingle(),
       supabase.from("configuracoes").select("*").eq("user_id", userId).maybeSingle(),
+      supabase.from("admins").select("user_id").eq("user_id", userId).maybeSingle(),
     ]);
     setAssinatura(ass);
     setConfig(cfg || {});
+    setIsAdmin(!!adm);
     setLoading(false);
   }
 
@@ -94,6 +98,7 @@ export default function App() {
           <nav style={{ padding: "12px 8px", flex: 1 }}>
             {navItem("receitas", "📋", "Receitas")}
             {navItem("config", "⚙️", "Configurações")}
+            {isAdmin && navItem("admin", "🔑", "Admin")}
           </nav>
         )}
 
@@ -117,6 +122,8 @@ export default function App() {
       <main style={{ flex: 1, minWidth: 0, padding: "32px 36px" }}>
         {!assinatura ? (
           <Assinatura user={session.user} onAssinado={() => loadTudo(session.user.id)} />
+        ) : aba === "admin" && isAdmin ? (
+          <Admin user={session.user} />
         ) : aba === "config" ? (
           <Configuracoes user={session.user} onSalvo={novoConfig => { setConfig(novoConfig); setAba("receitas"); }} />
         ) : (
