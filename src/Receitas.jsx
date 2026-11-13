@@ -17,6 +17,26 @@ const emptyForm = {
   observacoes: "",
 };
 
+const DRAFT_KEY = "rxfacil_draft";
+
+function loadDraft(cfg = {}) {
+  try {
+    const saved = localStorage.getItem(DRAFT_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // preenche campos do médico com config atual se estiverem vazios no rascunho
+      return {
+        ...parsed,
+        medico: parsed.medico || cfg.medico || "",
+        crm: parsed.crm || cfg.crm || "",
+        especialidade: parsed.especialidade || cfg.especialidade || "",
+        unidade: parsed.unidade || cfg.unidade || "",
+      };
+    }
+  } catch {}
+  return null;
+}
+
 export default function Receitas({ user, config = {} }) {
   const [receitas, setReceitas] = useState([]);
   const [editing, setEditing] = useState(null);
@@ -29,7 +49,14 @@ export default function Receitas({ user, config = {} }) {
     especialidade: cfg.especialidade || "",
     unidade: cfg.unidade || "",
   });
-  const [form, setForm] = useState(() => makeForm(config));
+  const [form, setForm] = useState(() => loadDraft(config) || makeForm(config));
+
+  // salva rascunho no localStorage sempre que o form mudar (só quando não está editando)
+  useEffect(() => {
+    if (!editing) {
+      try { localStorage.setItem(DRAFT_KEY, JSON.stringify(form)); } catch {}
+    }
+  }, [form, editing]);
 
   useEffect(() => { loadReceitas(); }, []);
 
@@ -59,6 +86,7 @@ export default function Receitas({ user, config = {} }) {
       ? await supabase.from("receitas").update(payload).eq("id", editing)
       : await supabase.from("receitas").insert(payload);
     if (result.error) { alert("Erro: " + result.error.message); return; }
+    try { localStorage.removeItem(DRAFT_KEY); } catch {}
     setForm(makeForm(config)); setEditing(null); loadReceitas();
   }
 
